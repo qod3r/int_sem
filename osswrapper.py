@@ -27,32 +27,32 @@ class Api:
         bs = b._beatmapset
         # pprint(score)
         res = f'''
-            <{map_status[int(b.status.value)]}> {bs.artist} - {bs.title} [{b.version}] by {bs.creator}
-            {b.total_length//60:02.0f}:{b.total_length%60:02.0f} | AR:{b.ar} CS:{b.cs} OD:{b.accuracy} HP:{b.drain} {b.bpm}BPM | {b.difficulty_rating:.2f}✩ {f"+{score.mods.short_name()}" if score.mods.value != 0 else ""}
+<{map_status[int(b.status.value)]}> {bs.artist} - {bs.title} [{b.version}] by {bs.creator}
+{b.total_length//60:02.0f}:{b.total_length%60:02.0f} | AR:{b.ar} CS:{b.cs} OD:{b.accuracy} HP:{b.drain} {b.bpm}BPM | {b.difficulty_rating:.2f}✩ {f"+{score.mods.short_name()}" if score.mods.value != 0 else ""}
 
-            {self.pretty_time(score.created_at)}
-            Score: {score.score} | Combo: {score.max_combo}x/{b.max_combo}x
-            Accuracy: {self.calc_acc(score.statistics):.2f}%
-            PP: {0 if score.pp is None else score.pp}
-            Hitcounts: {score.statistics.count_300}/{score.statistics.count_100}/{score.statistics.count_50}/{score.statistics.count_miss}
-            Grade: {score.rank.name} ({self.calc_completion(score.statistics, b):.2f}%)
+{self.pretty_time(score.created_at)}
+Score: {score.score} | Combo: {score.max_combo}x/{b.max_combo}x
+Accuracy: {self.calc_acc(score.statistics):.2f}%
+PP: {0 if score.pp is None else score.pp}
+Hitcounts: {score.statistics.count_300}/{score.statistics.count_100}/{score.statistics.count_50}/{score.statistics.count_miss}
+Grade: {score.rank.name} ({self.calc_completion(score.statistics, b):.2f}%)
 
-            Beatmap: https://osu.ppy.sh/b/{b.id}
-            '''
+Beatmap: <https://osu.ppy.sh/b/{b.id}>
+'''
         return res
 
         
     def score_string_minimal(self, score, b):
         bs = b._beatmapset
         res = f'''
-            {bs.title} [{b.version}] {f"+{score.mods.short_name()}" if score.mods.value != 0 else ""}
-            AR:{b.ar} CS:{b.cs} OD:{b.accuracy} HP:{b.drain} {b.difficulty_rating:.2f}✩
-            Grade: {score.rank.name} ⯈ {score.max_combo}x/{b.max_combo}x ⯈ {b.total_length//60:02.0f}:{b.total_length%60:02.0f}
-            Accuracy: {self.calc_acc(score.statistics):.2f}% ⯈ {score.statistics.count_300}/{score.statistics.count_100}/{score.statistics.count_50}/{score.statistics.count_miss}
-            PP: {score.pp}
-            {self.pretty_time(score.created_at)}
-            https://osu.ppy.sh/b/{b.id}
-            '''
+{bs.title} [{b.version}] {f"+{score.mods.short_name()}" if score.mods.value != 0 else ""}
+AR:{b.ar} CS:{b.cs} OD:{b.accuracy} HP:{b.drain} {b.difficulty_rating:.2f}✩
+Grade: {score.rank.name} ⯈ {score.max_combo}x/{b.max_combo}x ⯈ {b.total_length//60:02.0f}:{b.total_length%60:02.0f}
+Accuracy: {self.calc_acc(score.statistics):.2f}% ⯈ {score.statistics.count_300}/{score.statistics.count_100}/{score.statistics.count_50}/{score.statistics.count_miss}
+PP: {score.pp}
+{self.pretty_time(score.created_at)}
+<https://osu.ppy.sh/b/{b.id}>
+'''
         return res
 
     def player_info(self, user_id):
@@ -65,16 +65,17 @@ class Api:
         full_hours = stats.play_time//3600
         
         res = f'''
-        Player: {player.username}
-        Rank: #{stats.global_rank} ({player.country_code} #{stats.country_rank})
-        Playcount: {stats.play_count} (Lv{stats.level.current})
-        Playtime: {day_delta}d {hour_delta}h {min_delta}m ({full_hours} hours)
-        PP: {stats.pp:.0f}
-        Accuracy: {stats.hit_accuracy:.2f}%
-        https://osu.ppy.sh/u/{player.id}'''
+Player: {player.username}
+Rank: #{stats.global_rank} ({player.country_code} #{stats.country_rank})
+Playcount: {stats.play_count} (Lv{stats.level.current})
+Playtime: {day_delta}d {hour_delta}h {min_delta}m ({full_hours} hours)
+PP: {stats.pp:.0f}
+Accuracy: {stats.hit_accuracy:.2f}%
+<https://osu.ppy.sh/u/{player.id}>'''
         return res
     
-    def recent(self, user_id, index=None):
+    def recent(self, user, index=None):
+        user_id = self.apiv1.get_user(user).user_id
         if index is not None:
             if index > 50 or index <= 0:
                 return "Доступны только последние 50 скоров"
@@ -88,12 +89,13 @@ class Api:
             return "Скор не найден"
         
         user_score = user_scores[index-1]
-        
         b = self.apiv2.beatmap(user_score.beatmap.id)
-        return self.score_string(user_score, b)
+        thumb = b._beatmapset.covers.cover
+        return self.score_string(user_score, b), thumb
     
-    def top_plays(self, user_id, index=None):
+    def top_plays(self, user, index=None):
         use_minimal = True
+        user_id = self.apiv1.get_user(user).user_id
         if index is not None:
             if index > 100 or index <= 0:
                 return "Доступны только топ 100 скоров"
@@ -106,17 +108,20 @@ class Api:
         
         player_name = self.apiv1.get_user(user_id).username
         res = f"Топ скоры игрока {player_name}:\n"
-        
+        thumb = None
         for score in scores:
             b = self.apiv2.beatmap(score.beatmap.id)
+            # pprint(b)
             res += f"#{index}"
             index += 1
             if use_minimal:
                 res += self.score_string_minimal(score, b)
             else:
                 res += self.score_string(score, b)
+                thumb = b._beatmapset.covers.cover
+                
 
-        return res
+        return res, thumb
 
 
 if __name__ == "__main__":
@@ -129,8 +134,9 @@ if __name__ == "__main__":
     # pprint(api.apiv2.user_scores(9453854, ScoreType.RECENT, include_fails=1)[0])
     # pprint(api.apiv2.user_scores(9453854, ScoreType.RECENT,)[0])
     # print(api.player_info(9453854))
-    print(api.player_info(15400032))
-    # print(api.top_plays(9453854))
+    # print(api.player_info(15400032))
+    print(api.top_plays(9453854, 1))
     # print(api.recent(9453854))
+    # pprint(api.apiv2.user("qod3r"))
     
     # pprint(vars(api.apiv1.get_user_recent(9453854, 0, 10)[0]))
