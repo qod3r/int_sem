@@ -1,8 +1,6 @@
-import json
 import pickle
 import os
 from discord.ext import commands
-from discord import Embed
 from apikeys import BOT_TOKEN, CLIENT_ID, CLIENT_SECRET, API_KEY
 from osswrapper import Api
 
@@ -20,6 +18,7 @@ else:
 
 def parse(ctx, args):
     if len(args) == 0:
+        # o t
         if ctx.author.id in usernames:
             user = usernames[ctx.author.id]
         else:
