@@ -64,7 +64,7 @@ def recent(apiv1, apiv2, uid, index=None):
 def top_plays(apiv1, uid, index=None):
     if index is not None:
         if index > 100 or index == 0:
-            return "Доступны только последние 100 скоров"
+            return "Доступны только топ 100 скоров"
         else:
             scores = apiv1.get_user_best(uid, 0, index)[index-1:index]
     else:
@@ -88,6 +88,7 @@ def top_plays(apiv1, uid, index=None):
         index += 1
     return res
 
+# def 
 
 apiv2 = OssapiV2(CLIENT_ID, CLIENT_SECRET)
 apiv1 = Ossapi(API_KEY)
@@ -95,4 +96,7 @@ apiv1 = Ossapi(API_KEY)
 
 # print(user_v2(apiv2, "qod3r"))
 # print(recent(apiv1, apiv2, "whitecat"))
-print(top_plays(apiv1, "qod3r"))
+# print(top_plays(apiv1, "qod3r"))
+# print(recent(apiv1, apiv2, "qod3r", 5))
+pprint(apiv2.beatmap_user_score(beatmap_id=1402392, user_id=9453854))
+pprint(apiv2.beatmap(beatmap_id=1402392))

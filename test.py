@@ -34,6 +34,7 @@ def user(api, uid):
 
 # Beatmap: https://osu.ppy.sh/b/3514695
 def recent(api, uid):
+    print(len(api.get_user_recent(uid)))
     score = api.get_user_recent(uid)[0]
     b = api.get_beatmaps(beatmap_id=score.beatmap_id)[0]
     
